@@ -8,6 +8,10 @@ import android.util.Log;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
 
+import java.io.ByteArrayInputStream;
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * MainActivity for Etarunnel Android
  * Extends BridgeActivity to integrate with Capacitor
@@ -15,11 +19,10 @@ import com.getcapacitor.BridgeWebViewClient;
  */
 public class MainActivity extends BridgeActivity {
     
-    // Tag for logging
     private static final String TAG = "Etarunnel";
     
-    // Ad domains to block
-    private static final String[] AD_DOMAINS = {
+    // List of domains to block
+    private final List<String> AD_DOMAINS = Arrays.asList(
         "doubleclick.net",
         "googleadservices.com",
         "googlesyndication.com",
@@ -28,87 +31,75 @@ public class MainActivity extends BridgeActivity {
         "adservice.google.com",
         "pagead2.googlesyndication.com",
         "tpc.googlesyndication.com",
-        "youtube-nocookie.com"
-    };
-    
+        "youtube-nocookie.com",
+        "adsystem.google.com",
+        "g.doubleclick.net"
+    );
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // Initialize the Capacitor bridge
-        // Note: registerPlugin() calls are handled automatically by Capacitor
+        Log.d(TAG, "MainActivity created - Initializing AdBlocker");
         
-        Log.d(TAG, "MainActivity created - Etarunnel starting");
-        
-        // Set up ad-blocking after the WebView is initialized
-        getBridge().getWebView().setWebViewClient(new AdBlockWebViewClient(getBridge()));
+        // Set the custom WebViewClient after the bridge is initialized
+        // We wait for the bridge to be ready
+        getBridge().getWebView().setWebViewClient(new AdBlockWebViewClient());
     }
-    
+
     /**
-     * Inner class implementing ad-blocking logic
-     * Overrides shouldInterceptRequest to block known ad domains
+     * Custom WebViewClient that handles ad blocking
      */
     private class AdBlockWebViewClient extends BridgeWebViewClient {
         
-        public AdBlockWebViewClient(com.getcapacitor.Bridge bridge) {
-            super(bridge);
-        }
-        
-        /**
-         * Intercept web resource requests and block ads
-         * @param view The WebView making the request
-         * @param request The WebResourceRequest containing URL info
-         * @return WebResourceResponse (null to allow, empty response to block)
-         */
         @Override
         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
             if (request == null || request.getUrl() == null) {
                 return super.shouldInterceptRequest(view, request);
             }
-            
+
             String url = request.getUrl().toString();
-            
-            // Check if this request should be blocked
-            if (shouldBlockAd(url)) {
-                Log.d(TAG, "Blocked ad request: " + url);
+
+            // Check if the URL matches any ad domain
+            if (isAdUrl(url)) {
+                Log.d(TAG, "Blocking ad request: " + url);
                 
-                // Return empty response to block the ad
-                // Using text/plain with 200 OK but empty content
-                return new WebResourceResponse("text/plain", "UTF-8", null);
+                // Return an empty response to block the request
+                // Returning a valid empty response is safer than returning null
+                return new WebResourceResponse("text/plain", "UTF-8", new ByteArrayInputStream("".getBytes()));
             }
-            
-            // Allow the request
+
+            // IMPORTANT: For all other requests (app assets, APIs, legitimate content),
+            // we MUST call super to allow the load to proceed normally.
             return super.shouldInterceptRequest(view, request);
         }
-        
+
         /**
-         * Check if a URL matches known ad domains
-         * @param url The URL to check
-         * @return true if the URL should be blocked as an ad
+         * Checks if a URL belongs to a known ad domain
          */
-        private boolean shouldBlockAd(String url) {
+        private boolean isAdUrl(String url) {
             if (url == null || url.isEmpty()) {
                 return false;
             }
-            
-            // Convert to lowercase for case-insensitive matching
+
             String lowerUrl = url.toLowerCase();
-            
-            // Check against all known ad domains
+
+            // Don't block local assets or data URIs
+            if (lowerUrl.startsWith("file://") || 
+                lowerUrl.startsWith("data:") || 
+                lowerUrl.startsWith("blob:") ||
+                lowerUrl.contains("localhost") ||
+                lowerUrl.contains("127.0.0.1")) {
+                return false;
+            }
+
+            // Check against ad domains
             for (String domain : AD_DOMAINS) {
                 if (lowerUrl.contains(domain)) {
                     return true;
                 }
             }
-            
-            // Also block common ad-related paths
-            if (lowerUrl.contains("/ads/") || 
-                lowerUrl.contains("/ad/") ||
-                lowerUrl.contains("sponsor") ||
-                lowerUrl.contains("promoted")) {
-                return true;
-            }
-            
+
             return false;
         }
     }
