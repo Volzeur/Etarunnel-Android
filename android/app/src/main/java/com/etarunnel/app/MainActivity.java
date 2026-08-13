@@ -23,12 +23,11 @@ public class MainActivity extends BridgeActivity {
     // More selective to avoid breaking YouTube functionality
     private static final String[] AD_PATTERNS = {
         "/pagead/",
-        "/ads/",
-        "/ad/",
         "doubleclick.net",
         "googleadservices.com",
         "googlesyndication.com/pagead",
-        "google-analytics.com",
+        "googlesyndication.com/safeframe",
+        "google-analytics.com/collect",
         "/api/ads/",
         "adsystem.google.com"
     };
@@ -40,8 +39,11 @@ public class MainActivity extends BridgeActivity {
         "googlevideo.com",
         "ytimg.com",
         "ggpht.com",
-        "googleapis.com/youtube",
-        "wide-youtube.l.google.com"
+        "googleapis.com",
+        "gstatic.com",
+        "googleusercontent.com",
+        "wide-youtube.l.google.com",
+        "googlesyndication.com"
     };
 
     @Override
