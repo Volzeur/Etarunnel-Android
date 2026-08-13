@@ -68,8 +68,16 @@ public class MainActivity extends BridgeActivity {
             // 2. Check against Ad Domains
             if (isAdDomain(url)) {
                 Log.d(TAG, "Blocked Ad: " + url);
-                // Return an empty response to block the request
-                return new WebResourceResponse("text/plain", "UTF-8", new ByteArrayInputStream("".getBytes()));
+                // Return a proper empty response with 204 No Content status
+                // This prevents err_blocked_by_response errors
+                return new WebResourceResponse(
+                    "text/plain", 
+                    "UTF-8", 
+                    204, 
+                    "No Content", 
+                    null, 
+                    new ByteArrayInputStream("".getBytes())
+                );
             }
 
             // 3. Allow everything else by calling super
