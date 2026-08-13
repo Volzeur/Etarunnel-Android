@@ -39,15 +39,9 @@ public class MainActivity extends BridgeActivity {
         // Note: registerPlugin() calls are handled automatically by Capacitor
         
         Log.d(TAG, "MainActivity created - Etarunnel starting");
-    }
-    
-    /**
-     * Custom WebViewClient that blocks ad requests
-     * This is called by the Bridge to intercept web requests
-     */
-    @Override
-    protected BridgeWebViewClient createWebViewClient() {
-        return new AdBlockWebViewClient();
+        
+        // Set up ad-blocking after the WebView is initialized
+        getBridge().getWebView().setWebViewClient(new AdBlockWebViewClient(getBridge()));
     }
     
     /**
@@ -56,8 +50,8 @@ public class MainActivity extends BridgeActivity {
      */
     private class AdBlockWebViewClient extends BridgeWebViewClient {
         
-        public AdBlockWebViewClient() {
-            super(MainActivity.this.bridge);
+        public AdBlockWebViewClient(com.getcapacitor.Bridge bridge) {
+            super(bridge);
         }
         
         /**
@@ -85,30 +79,6 @@ public class MainActivity extends BridgeActivity {
             
             // Allow the request
             return super.shouldInterceptRequest(view, request);
-        }
-        
-        /**
-         * Legacy method for older Android versions (API < 21)
-         * @param view The WebView making the request
-         * @param url The URL string being requested
-         * @return WebResourceResponse (null to allow, empty response to block)
-         */
-        @Override
-        public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
-            if (url == null) {
-                return super.shouldInterceptRequest(view, url);
-            }
-            
-            // Check if this request should be blocked
-            if (shouldBlockAd(url)) {
-                Log.d(TAG, "Blocked ad request (legacy): " + url);
-                
-                // Return empty response to block the ad
-                return new WebResourceResponse("text/plain", "UTF-8", null);
-            }
-            
-            // Allow the request
-            return super.shouldInterceptRequest(view, url);
         }
         
         /**
