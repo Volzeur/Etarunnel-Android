@@ -39,15 +39,9 @@ public class MainActivity extends BridgeActivity {
         // Note: registerPlugin() calls are handled automatically by Capacitor
         
         Log.d(TAG, "MainActivity created - Etarunnel starting");
-    }
-    
-    /**
-     * Custom WebViewClient that blocks ad requests
-     * This is called by the Bridge to intercept web requests
-     */
-    @Override
-    protected BridgeWebViewClient createWebViewClient() {
-        return new AdBlockWebViewClient();
+        
+        // Set up ad-blocking after the WebView is initialized
+        getBridge().getWebView().setWebViewClient(new AdBlockWebViewClient(getBridge()));
     }
     
     /**
@@ -56,8 +50,8 @@ public class MainActivity extends BridgeActivity {
      */
     private class AdBlockWebViewClient extends BridgeWebViewClient {
         
-        public AdBlockWebViewClient() {
-            super(MainActivity.this.bridge);
+        public AdBlockWebViewClient(com.getcapacitor.Bridge bridge) {
+            super(bridge);
         }
         
         /**
