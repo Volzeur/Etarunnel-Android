@@ -9,49 +9,45 @@ import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
 
 import java.io.ByteArrayInputStream;
-import java.util.Arrays;
-import java.util.List;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 /**
  * MainActivity for Etarunnel Android
- * Extends BridgeActivity to integrate with Capacitor
- * Implements ad-blocking by overriding shouldInterceptRequest
  */
 public class MainActivity extends BridgeActivity {
-    
+
     private static final String TAG = "Etarunnel";
-    
-    // List of domains to block
-    private final List<String> AD_DOMAINS = Arrays.asList(
+
+    // List of domains to block. 
+    // Be specific to avoid blocking legitimate content.
+    private static final String[] AD_DOMAINS = {
         "doubleclick.net",
         "googleadservices.com",
         "googlesyndication.com",
         "google-analytics.com",
-        "ad.doubleclick.net",
         "adservice.google.com",
         "pagead2.googlesyndication.com",
         "tpc.googlesyndication.com",
-        "youtube-nocookie.com",
-        "adsystem.google.com",
-        "g.doubleclick.net"
-    );
+        "adsystem.google.com"
+    };
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Initialize the bridge and set our custom WebViewClient
+        getBridge().getWebView().setWebViewClient(new AdBlockWebViewClient(getBridge()));
         
-        Log.d(TAG, "MainActivity created - Initializing AdBlocker");
-        
-        // Set the custom WebViewClient after the bridge is initialized
-        // We wait for the bridge to be ready
-        getBridge().getWebView().setWebViewClient(new AdBlockWebViewClient());
+        Log.d(TAG, "MainActivity initialized with AdBlocking");
     }
 
-    /**
-     * Custom WebViewClient that handles ad blocking
-     */
     private class AdBlockWebViewClient extends BridgeWebViewClient {
-        
+
+        public AdBlockWebViewClient(com.getcapacitor.Bridge bridge) {
+            super(bridge);
+        }
+
         @Override
         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
             if (request == null || request.getUrl() == null) {
@@ -60,46 +56,41 @@ public class MainActivity extends BridgeActivity {
 
             String url = request.getUrl().toString();
 
-            // Check if the URL matches any ad domain
-            if (isAdUrl(url)) {
-                Log.d(TAG, "Blocking ad request: " + url);
-                
+            // 1. ALWAYS ALLOW local Capacitor assets
+            // If we block these, the app shows a blank screen or err_blocked_by_response
+            if (url.startsWith("file://") || 
+                url.startsWith("content://") || 
+                url.startsWith("data:") || 
+                url.startsWith("blob:")) {
+                return super.shouldInterceptRequest(view, request);
+            }
+
+            // 2. Check against Ad Domains
+            if (isAdDomain(url)) {
+                Log.d(TAG, "Blocked Ad: " + url);
                 // Return an empty response to block the request
-                // Returning a valid empty response is safer than returning null
                 return new WebResourceResponse("text/plain", "UTF-8", new ByteArrayInputStream("".getBytes()));
             }
 
-            // IMPORTANT: For all other requests (app assets, APIs, legitimate content),
-            // we MUST call super to allow the load to proceed normally.
+            // 3. Allow everything else by calling super
+            // This is critical: it lets Capacitor handle its own internal requests
             return super.shouldInterceptRequest(view, request);
         }
 
-        /**
-         * Checks if a URL belongs to a known ad domain
-         */
-        private boolean isAdUrl(String url) {
-            if (url == null || url.isEmpty()) {
-                return false;
-            }
+        private boolean isAdDomain(String url) {
+            try {
+                URL parsedUrl = new URL(url);
+                String host = parsedUrl.getHost().toLowerCase();
 
-            String lowerUrl = url.toLowerCase();
-
-            // Don't block local assets or data URIs
-            if (lowerUrl.startsWith("file://") || 
-                lowerUrl.startsWith("data:") || 
-                lowerUrl.startsWith("blob:") ||
-                lowerUrl.contains("localhost") ||
-                lowerUrl.contains("127.0.0.1")) {
-                return false;
-            }
-
-            // Check against ad domains
-            for (String domain : AD_DOMAINS) {
-                if (lowerUrl.contains(domain)) {
-                    return true;
+                for (String domain : AD_DOMAINS) {
+                    if (host.equals(domain) || host.endsWith("." + domain)) {
+                        return true;
+                    }
                 }
+            } catch (MalformedURLException e) {
+                // If URL is invalid, don't block it just in case
+                return false;
             }
-
             return false;
         }
     }
