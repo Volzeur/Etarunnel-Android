@@ -82,30 +82,6 @@ public class MainActivity extends BridgeActivity {
         }
         
         /**
-         * Legacy method for older Android versions (API < 21)
-         * @param view The WebView making the request
-         * @param url The URL string being requested
-         * @return WebResourceResponse (null to allow, empty response to block)
-         */
-        @Override
-        public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
-            if (url == null) {
-                return super.shouldInterceptRequest(view, url);
-            }
-            
-            // Check if this request should be blocked
-            if (shouldBlockAd(url)) {
-                Log.d(TAG, "Blocked ad request (legacy): " + url);
-                
-                // Return empty response to block the ad
-                return new WebResourceResponse("text/plain", "UTF-8", null);
-            }
-            
-            // Allow the request
-            return super.shouldInterceptRequest(view, url);
-        }
-        
-        /**
          * Check if a URL matches known ad domains
          * @param url The URL to check
          * @return true if the URL should be blocked as an ad
