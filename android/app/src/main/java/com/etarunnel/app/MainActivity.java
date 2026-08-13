@@ -19,17 +19,29 @@ public class MainActivity extends BridgeActivity {
 
     private static final String TAG = "Etarunnel";
 
-    // List of domains to block. 
-    // Be specific to avoid blocking legitimate content.
-    private static final String[] AD_DOMAINS = {
+    // List of specific ad-related URL patterns to block
+    // More selective to avoid breaking YouTube functionality
+    private static final String[] AD_PATTERNS = {
+        "/pagead/",
+        "/ads/",
+        "/ad/",
         "doubleclick.net",
         "googleadservices.com",
-        "googlesyndication.com",
+        "googlesyndication.com/pagead",
         "google-analytics.com",
-        "adservice.google.com",
-        "pagead2.googlesyndication.com",
-        "tpc.googlesyndication.com",
+        "/api/ads/",
         "adsystem.google.com"
+    };
+    
+    // Domains that should NEVER be blocked (YouTube core functionality)
+    private static final String[] ALLOWED_DOMAINS = {
+        "youtube.com",
+        "youtu.be",
+        "googlevideo.com",
+        "ytimg.com",
+        "ggpht.com",
+        "googleapis.com/youtube",
+        "wide-youtube.l.google.com"
     };
 
     @Override
@@ -57,7 +69,6 @@ public class MainActivity extends BridgeActivity {
             String url = request.getUrl().toString();
 
             // 1. ALWAYS ALLOW local Capacitor assets
-            // If we block these, the app shows a blank screen or err_blocked_by_response
             if (url.startsWith("file://") || 
                 url.startsWith("content://") || 
                 url.startsWith("data:") || 
@@ -65,11 +76,15 @@ public class MainActivity extends BridgeActivity {
                 return super.shouldInterceptRequest(view, request);
             }
 
-            // 2. Check against Ad Domains
-            if (isAdDomain(url)) {
+            // 2. ALWAYS ALLOW YouTube core domains - never block these
+            if (isAllowedDomain(url)) {
+                return super.shouldInterceptRequest(view, request);
+            }
+
+            // 3. Check against Ad Patterns
+            if (isAdPattern(url)) {
                 Log.d(TAG, "Blocked Ad: " + url);
                 // Return a proper empty response with 204 No Content status
-                // This prevents err_blocked_by_response errors
                 return new WebResourceResponse(
                     "text/plain", 
                     "UTF-8", 
@@ -80,23 +95,32 @@ public class MainActivity extends BridgeActivity {
                 );
             }
 
-            // 3. Allow everything else by calling super
-            // This is critical: it lets Capacitor handle its own internal requests
+            // 4. Allow everything else by calling super
             return super.shouldInterceptRequest(view, request);
         }
 
-        private boolean isAdDomain(String url) {
+        private boolean isAdPattern(String url) {
+            String urlLower = url.toLowerCase();
+            
+            for (String pattern : AD_PATTERNS) {
+                if (urlLower.contains(pattern)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private boolean isAllowedDomain(String url) {
             try {
                 URL parsedUrl = new URL(url);
                 String host = parsedUrl.getHost().toLowerCase();
 
-                for (String domain : AD_DOMAINS) {
+                for (String domain : ALLOWED_DOMAINS) {
                     if (host.equals(domain) || host.endsWith("." + domain)) {
                         return true;
                     }
                 }
             } catch (MalformedURLException e) {
-                // If URL is invalid, don't block it just in case
                 return false;
             }
             return false;

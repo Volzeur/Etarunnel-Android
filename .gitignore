@@ -1,46 +1,69 @@
 ```
-# Android build artifacts
-*.apk
-*.aar
-*.dex
+# Compiled and build artifacts
+*.class
+*.o
+*.obj
+*.so
+*.a
+*.dll
+*.exe
+*.out
 
-# Android dependency cache
+# Dependencies
+node_modules/
+venv/
+.venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+target/
 .gradle/
-build/
 
-# Android Studio
-.idea/
-*.iml
-*.iws
+# Logs and temp files
 *.log
-
-# Local configuration file (sdk path, etc)
-local.properties
-
-# Keystore properties
-keystore.properties
-
-# Generated files
-gen/
-out/
-
-# Log Files
-*.log
+*.tmp
+*.swp
+*.swo
 
 # Environment
 .env
 .env.local
-.env.*
+*.env.*
 
-# Dependencies
-node_modules/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.venv/
-target/
+# Editors
+.vscode/
+.idea/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
 ```
